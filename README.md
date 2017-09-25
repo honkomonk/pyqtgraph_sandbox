@@ -1,1 +1,1 @@
-# pyqtgraph_sandbox
+# PyQtGraph sandbox
