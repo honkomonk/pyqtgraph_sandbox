@@ -19,13 +19,11 @@ import collections
 
 def cmapToColormap(cmap, nTicks=16):
     """
-    Converts a Matplotlib cmap to pyqtgraphs colormaps. 
-    No dependency on matplotlib.
+    Converts a Matplotlib cmap to pyqtgraphs colormaps. No dependency on matplotlib.
 
-    :param cmap: Cmap object. Imported from matplotlib.cm.*
-    :param nTicks: Number of ticks to create when the cmap is a dictionary of functions. Otherwise unused.
-    
-    :return: A list of (<tick position>, (R, G, B)) tuples, like they're used in the GradientEditorItem
+    Parameters:
+    *cmap*: Cmap object. Imported from matplotlib.cm.*
+    *nTicks*: Number of ticks to create when dict of functions is used. Otherwise unused.
     """
 
     # Case #1: a dictionary with 'red'/'green'/'blue' values as list of ranges (e.g. 'jet')
@@ -33,7 +31,6 @@ def cmapToColormap(cmap, nTicks=16):
     if hasattr(cmap, '_segmentdata'):
         colordata = getattr(cmap, '_segmentdata')
         if ('red' in colordata) and isinstance(colordata['red'], collections.Sequence):
-            # print("[cmapToColormap] RGB dicts with ranges")
 
             # collect the color ranges from all channels into one dict to get unique indices
             posDict = {}
@@ -62,37 +59,35 @@ def cmapToColormap(cmap, nTicks=16):
                 for curIdx in indexList:
                     posDict[curIdx][channel] *= 255
 
-            posList = [[i, posDict[i]] for i in indexList]
-            return posList
+            rgb_list = [[i, posDict[i]] for i in indexList]
 
         # Case #2: a dictionary with 'red'/'green'/'blue' values as functions (e.g. 'gnuplot')
         elif ('red' in colordata) and isinstance(colordata['red'], collections.Callable):
-            # print("[cmapToColormap] RGB dict with functions")
             indices = np.linspace(0., 1., nTicks)
             luts = [np.clip(np.array(colordata[rgb](indices), dtype=np.float), 0, 1) * 255 \
                     for rgb in ('red', 'green', 'blue')]
-            return list(zip(indices, list(zip(*luts))))
+            rgb_list = zip(indices, list(zip(*luts)))
 
     # If the parameter 'cmap' is a 'matplotlib.colors.ListedColormap' instance, with the attributes 'colors' and 'N'
     elif hasattr(cmap, 'colors') and hasattr(cmap, 'N'):
         colordata = getattr(cmap, 'colors')
         # Case #3: a list with RGB values (e.g. 'seismic')
         if len(colordata[0]) == 3:
-            # print("[cmapToColormap] list with RGB values")
             indices = np.linspace(0., 1., len(colordata))
             scaledRgbTuples = [(rgbTuple[0] * 255, rgbTuple[1] * 255, rgbTuple[2] * 255) for rgbTuple in colordata]
-            return list(zip(indices, scaledRgbTuples))
+            rgb_list = zip(indices, scaledRgbTuples)
 
         # Case #4: a list of tuples with positions and RGB-values (e.g. 'terrain')
         # -> this section is probably not needed anymore!?
         elif len(colordata[0]) == 2:
-            # print("[cmapToColormap] list with positions and RGB-values. Just scale the values.")
-            scaledCmap = [(idx, (vals[0] * 255, vals[1] * 255, vals[2] * 255)) for idx, vals in colordata]
-            return scaledCmap
+            rgb_list = [(idx, (vals[0] * 255, vals[1] * 255, vals[2] * 255)) for idx, vals in colordata]
 
     # Case #X: unknown format or datatype was the wrong object type
     else:
         raise ValueError("[cmapToColormap] Unknown cmap format or not a cmap!")
+    
+    # Convert the RGB float values to RGBA integer values
+    return list([(pos, (int(r), int(g), int(b), 255)) for pos, (r, g, b) in rgb_list])
 
 
 
@@ -125,9 +120,7 @@ if __name__ == '__main__':
 
 
         # Convert a matplotlib colormap into a list of (tickmark, (r,g,b)) tuples
-        pos, rgb_colors = zip(*cmapToColormap(matplotlib.cm.cubehelix))
-        # Convert the RGB float values to RGBA integer values
-        rgba_colors = [(int(r), int(g), int(b), 255) for r, g, b in rgb_colors]
+        pos, rgba_colors = zip(*cmapToColormap(matplotlib.cm.cubehelix))
         # Set the colormap
         pgColormap =  pyqtgraph.ColorMap(pos, rgba_colors)
         imv.setLookupTable(pgColormap.getLookupTable())
