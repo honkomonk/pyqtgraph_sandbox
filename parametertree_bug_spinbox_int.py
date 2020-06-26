@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Minimum working example for a bug in pyqtgraph's parametertree. Calling a ParameterItems hide()/show() raises a TypeError in version 0.10.0."""
+"""
+Minimum working example for a bug in pyqtgraph's parametertree. 
+Setting a ParameterItem of type int with a float value changes the variable internally to a float?
+"""
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
